@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ALELAUNCHER</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="toastContainer"></div>
+  <div class="intro">ALELAUNCHER</div>
+
+  <div class="login-wrap">
+    <div class="login-box">
+      <h1>ALELAUNCHER</h1>
+
+      <div class="switch-buttons">
+        <button class="active fancy-button">Acceder</button>
+      </div>
+
+      <div id="forms">
+        <button id="msLoginBtn" class="fancy-button">Iniciar sesión con Microsoft</button>
+        <p style="margin-top:12px;font-size:12px;color:#ccc;">Se abrirá una ventana de Microsoft para autorizar tu cuenta.</p>
+        <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
+          <p class="muted" style="margin-bottom:8px;">O jugar sin Microsoft</p>
+          <input id="offlineName" type="text" placeholder="Nombre en el juego" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:#0f1625;color:#fff;">
+          <button id="offlineBtn" class="ghost-button" style="margin-top:10px;width:100%;">Entrar offline</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/renderer.js"></script>
+  <style>
+    #toastContainer { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+    .toast { min-width: 220px; padding: 12px 14px; border-radius: 12px; background: rgba(10,20,40,0.9); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); animation: fadein 0.2s ease, fadeout 0.3s ease 3.5s forwards; }
+    .toast.success { border-color: rgba(77,225,176,0.6); }
+    .toast.error { border-color: rgba(255,92,141,0.7); }
+    @keyframes fadein { from { opacity:0; transform: translateY(-5px); } to { opacity:1; transform: translateY(0);} }
+    @keyframes fadeout { to { opacity:0; transform: translateY(-5px);} }
+  </style>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MC Launcher</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="launcher-container">
+    <div class="left-panel">
+      <img src="../assets/logo.png" class="logo-launcher">
+      <h2 id="username">Bienvenido</h2>
+      <ul>
+        <li>Perfil</li>
+        <li>Opciones</li>
+        <li>Salir</li>
+      </ul>
+    </div>
+    <div class="right-panel">
+      <h2>Seleccionar versión</h2>
+      <select id="versionSelect">
+        <option value="1.20.1">Minecraft 1.20.1</option>
+        <option value="1.19.4">Minecraft 1.19.4</option>
+      </select>
+      <input type="text" placeholder="Usuario Minecraft" id="mcUser">
+      <input type="password" placeholder="Contraseña Minecraft" id="mcPass">
+      <button id="btnLaunch">Ejecutar juego</button>
+      <p id="logArea"></p>
+    </div>
+  </div>
+
+  <script>
+    const btnLaunch = document.getElementById('btnLaunch');
+    const logArea = document.getElementById('logArea');
+
+    btnLaunch.addEventListener('click', () => {
+      logArea.innerText = 'Preparando lanzamiento...';
+      // Aquí vendrá el código para ejecutar Minecraft con modpack
+      setTimeout(() => logArea.innerText = '¡Juego iniciado! (Beta) ✅', 1500);
+    });
+  </script>
+</body>
+</html>

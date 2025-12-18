@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AleLauncher Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --panel: #11182a;
+      --panel-2: #0f1524;
+      --accent: #7ae0ff;
+      --accent-2: #ffce00;
+      --text: #e8f0ff;
+      --muted: #8da0c2;
+      --shadow: 0 12px 40px rgba(0,0,0,0.35);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Poppins", "Segoe UI", sans-serif; }
+    body { background: linear-gradient(135deg, #0b1020, #0a0d18 50%, #0c1426); color: var(--text); height: 100vh; overflow: hidden; display: grid; grid-template-columns: 240px 1fr 340px; gap: 14px; padding: 14px; }
+    .panel { background: var(--panel); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .servers { padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+    .servers h3 { font-size: 16px; letter-spacing: 1px; color: var(--muted); }
+    .server-card { padding: 12px; border-radius: 12px; background: var(--panel-2); border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 6px; }
+    .server-card button { align-self: flex-start; padding: 8px 12px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--accent), #4de1b0); color: #041022; font-weight: 700; cursor: pointer; }
+    .center { padding: 16px; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; min-height: 0; }
+    .status-bar { display: flex; gap: 10px; align-items: center; }
+    .progress { flex: 1; background: rgba(255,255,255,0.06); height: 10px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); }
+    .progress-bar { width: 0%; height: 100%; background: linear-gradient(135deg, var(--accent), #4de1b0); transition: width 0.2s ease; }
+    .progress-bar.indeterminate { position: relative; animation: indet 1.2s infinite ease-in-out; }
+    @keyframes indet { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+    #progressText { font-size: 12px; color: var(--muted); }
+    .console { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; overflow-y: auto; font-family: "Consolas","SFMono-Regular",monospace; font-size: 12px; color: #d4e1ff; min-height: 0; height: 100%; }
+    .right { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .user-card { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 12px; background: var(--panel-2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+    .avatar { width: 64px; height: 64px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); background: #0b1220; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .badge { padding: 4px 8px; border-radius: 10px; background: linear-gradient(135deg, #ffce00, #ff9f1c); color: #1a1200; font-size: 11px; font-weight: 800; }
+    .btn-gear { width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: var(--text); cursor: pointer; }
+    .play-card { padding: 12px; background: var(--panel-2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); display: grid; gap: 10px; }
+    .toggle { width: 52px; height: 28px; border-radius: 14px; background: #1f2a3f; border: 1px solid rgba(255,255,255,0.08); position: relative; cursor: pointer; transition: 0.2s; }
+    .toggle.active { background: linear-gradient(120deg, var(--accent), #4de1b0); }
+    .toggle .dot { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; background: #0b1220; border-radius: 50%; transition: 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .toggle.active .dot { left: 27px; }
+    select, input[type="range"] { width: 100%; background: #101829; border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 10px; border-radius: 10px; }
+    .btn-primary { padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--accent), #4de1b0); color: #041022; font-weight: 800; cursor: pointer; box-shadow: 0 10px 25px rgba(0,0,0,0.35); }
+    .btn-ghost { padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer; }
+    .settings-modal { position: fixed; inset: 0; background: rgba(4, 8, 18, 0.85); display: none; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+    .settings-modal.open { display: flex; }
+    .settings-window { width: min(720px, 90vw); max-height: 90vh; display: flex; flex-direction: column; background: var(--panel); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 30px 80px rgba(0,0,0,0.45); }
+    .settings-header { padding: 18px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+    .settings-header-left { display: flex; flex-direction: column; gap: 8px; }
+    .settings-title { font-size: 18px; font-weight: 700; }
+    .profile-tabs { display: inline-flex; gap: 8px; background: rgba(255,255,255,0.04); padding: 6px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+    .profile-tab { border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); background: transparent; transition: 0.2s; }
+    .profile-tab.active { background: linear-gradient(130deg, var(--accent), #4de1b0); color: #041022; }
+    .profile-tab:not(.active):hover { color: var(--text); }
+    .settings-body { padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .mini-toggle { width: 38px; height: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: #1f2a3f; position: relative; cursor: pointer; transition: 0.2s; }
+    .mini-toggle.active { background: linear-gradient(120deg, var(--accent), #4de1b0); }
+    .mini-toggle .dot { position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #0b1220; transition: 0.2s; }
+    .mini-toggle.active .dot { left: 20px; }
+    .capture-btn { padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; background: rgba(255,255,255,0.08); color: var(--text); cursor: pointer; min-width: 140px; text-align: center; }
+    #toastContainer { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
+    .toast { min-width: 220px; padding: 12px 14px; border-radius: 12px; background: rgba(10, 20, 40, 0.9); border: 1px solid rgba(255,255,255,0.1); color: var(--text); font-size: 13px; box-shadow: var(--shadow); animation: fadein 0.2s ease, fadeout 0.3s ease 3.5s forwards; }
+    .toast.success { border-color: rgba(77,225,176,0.6); }
+    .toast.error { border-color: rgba(255,92,141,0.7); }
+    @keyframes fadein { from { opacity:0; transform: translateY(-5px); } to { opacity:1; transform: translateY(0);} }
+    @keyframes fadeout { to { opacity:0; transform: translateY(-5px);} }
+  </style>
+</head>
+<body>
+  <div id="toastContainer"></div>
+  <aside class="panel servers">
+    <h3>SERVIDORES</h3>
+    <div class="server-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>Banealand</strong>
+        <span class="badge" style="background:linear-gradient(135deg,#7ae0ff,#4de1b0);color:#041022;">Oficial</span>
+      </div>
+      <p class="muted">Server recomendado</p>
+      <button id="banealandBtn">Abrir</button>
+    </div>
+  </aside>
+
+  <main class="panel center">
+    <div class="status-bar">
+      <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+      <div id="progressText">Esperando accion...</div>
+    </div>
+    <div id="consoleLog" class="console"></div>
+  </main>
+
+  <section class="right">
+    <div class="user-card">
+      <div class="avatar"><img id="avatarImg" alt="skin"></div>
+      <div>
+        <div class="muted">Bienvenido</div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <strong id="mainUserName">Jugador</strong>
+          <span id="premiumBadge" class="badge" style="display:none;">PREMIUM</span>
+        </div>
+        <div class="muted" id="userRole">Standard</div>
+      </div>
+      <button id="settingsToggle" class="btn-gear">&#9881;</button>
+    </div>
+
+    <div class="play-card">
+      <div class="row" style="justify-content: space-between;">
+        <div>
+          <div class="muted">Sesion</div>
+          <div id="msStatus" class="muted">No verificada</div>
+        </div>
+        <button id="loginMicrosoft" class="btn-ghost">Vincular Microsoft</button>
+      </div>
+      <div>
+        <label class="muted">Version</label>
+        <select id="versionSelect"></select>
+      </div>
+      <button id="launchBtn" class="btn-primary">Jugar</button>
+    </div>
+  </section>
+
+  <div id="settingsModal" class="settings-modal">
+    <div class="settings-window">
+      <div class="settings-header">
+        <div class="settings-header-left">
+          <div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:1px;">Configuracion</div>
+          <div class="settings-title">Ajustes del Launcher</div>
+          <div class="profile-tabs">
+            <button id="profileTabVanilla" class="profile-tab active">Vanilla</button>
+            <button id="profileTabModpack" class="profile-tab">Modpack</button>
+            <button id="logoutBtn" class="profile-tab" style="color:#ff6b6b;">Cerrar sesion</button>
+          </div>
+        </div>
+        <button id="settingsClose" class="btn-gear" style="border:none;">&#9881;</button>
+      </div>
+      <div class="settings-body" id="settingsPanel">
+        <div class="row">
+          <label>RAM</label>
+          <select id="ramSelect">
+            <option value="2000">2 GB</option>
+            <option value="4000">4 GB</option>
+            <option value="6000">6 GB</option>
+            <option value="12000">12 GB</option>
+            <option value="16000">16 GB</option>
+          </select>
+        </div>
+        <div class="row"><label>FOV <span id="fovValue" class="muted"></span></label></div>
+        <input id="fovRange" type="range" min="30" max="120" step="1">
+        <div class="row"><label>Sensibilidad <span id="sensValue" class="muted"></span></label></div>
+        <input id="sensRange" type="range" min="0.1" max="2" step="0.01">
+        <div class="row"><label>Gamma <span id="gammaValue" class="muted"></span></label></div>
+        <input id="gammaRange" type="range" min="0" max="500" step="5">
+        <div class="row"><label>Musica <span id="musicValue" class="muted"></span></label></div>
+        <input id="musicRange" type="range" min="0" max="100" step="1">
+        <div class="row">
+          <label>FPS max.</label>
+          <select id="fpsSelect">
+            <option value="30">30</option>
+            <option value="60">60</option>
+            <option value="90">90</option>
+            <option value="120">120</option>
+            <option value="0">Ilimitado</option>
+          </select>
+        </div>
+        <div class="row" style="gap:8px;">
+          <div style="flex:1;">
+            <label>Render Distance <span id="renderValue" class="muted"></span></label>
+            <input id="renderRange" type="range" min="5" max="32" step="1">
+          </div>
+          <div style="flex:1;">
+            <label>Simulation Distance <span id="simValue" class="muted"></span></label>
+            <input id="simRange" type="range" min="5" max="32" step="1">
+          </div>
+        </div>
+        <div class="row" style="justify-content: space-between; flex-wrap: wrap;">
+          <div class="row" style="gap:6px;">
+            <label>Pantalla completa</label>
+            <div id="fullscreenToggle" class="mini-toggle"><span class="dot"></span></div>
+          </div>
+          <div class="row" style="gap:6px;">
+            <label>Cerrar launcher</label>
+            <div id="closeToggle" class="mini-toggle"><span class="dot"></span></div>
+          </div>
+          <div class="row" style="gap:6px;">
+            <label>VSync <span class="muted">(Recomendado desactivado)</span></label>
+            <div id="vsyncToggle" class="mini-toggle"><span class="dot"></span></div>
+          </div>
+        </div>
+        <div class="row" style="justify-content: space-between;">
+          <div>
+            <label>Agacharse</label>
+            <button id="sneakCapture" class="capture-btn" data-key="key.keyboard.left.shift">Shift izquierdo</button>
+          </div>
+          <div>
+            <label>Correr</label>
+            <button id="sprintCapture" class="capture-btn" data-key="key.keyboard.left.control">Ctrl izquierdo</button>
+          </div>
+        </div>
+        <button id="saveSettings" class="btn-primary">Guardar configuracion</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./dashboard.js"></script>
+</body>
+</html>

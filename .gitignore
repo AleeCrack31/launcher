@@ -1,0 +1,32 @@
+# Dependencias y binarios de Node/Electron
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Config/env privados
+.env
+*.env
+ms_token.json
+*/ms_token.json
+
+# Datos de ejecución que no deben versionarse
+logs/
+minecraft/
+modpacks/*/minecraft/
+modpacks/*/mods/
+modpacks/*/config/
+modpacks/*/manifest.local.json
+modpacks/*/forge-*-installer.jar.log
+modpacks/*/*.jar
+modpacks/*/*.zip
+imgui.ini
+
+# Archivos de log comprimidos
+*.log
+*.log.gz
+
+# Sistema operativo / IDE
+.DS_Store
+Thumbs.db
+.vscode/
