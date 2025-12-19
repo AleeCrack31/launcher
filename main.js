@@ -465,31 +465,25 @@ ipcMain.handle('launch-game', async (_event, opts = {}) => {
       }
     }
 
-    // Ruta Java preferida (Java 8 solo para banealand, Java 21 para el resto)
-  const java8 = path.join('C:\\', 'Program Files', 'Java', 'jre1.8.0_471', 'bin', modpack === 'banealand' ? 'java.exe' : 'javaw.exe');
-  const gammaRuntime = path.join(defaultMcRoot, 'runtime', 'java-runtime-gamma', 'windows-x64', 'java-runtime-gamma', 'bin', modpack === 'banealand' ? 'java.exe' : 'javaw.exe');
-  const legacyJava = path.join(defaultMcRoot, 'runtime', 'jre-x64', 'bin', modpack === 'banealand' ? 'java.exe' : 'javaw.exe');
-  const legacyJavaAlt = path.join(defaultMcRoot, 'runtime', 'jre-legacy', 'windows-x64', modpack === 'banealand' ? 'java.exe' : 'javaw.exe');
-  const java21Candidates = [
-    path.join('C:\\', 'Program Files', 'Java', 'jdk-21', 'bin', 'javaw.exe'),
-    path.join('C:\\', 'Program Files', 'Java', 'jdk-21.0.8', 'bin', 'javaw.exe'),
-    path.join('C:\\', 'Program Files', 'Java', 'jdk-21.0.9', 'bin', 'javaw.exe'),
-    path.join(process.env.JAVA_HOME || '', 'bin', 'javaw.exe')
-  ].filter(Boolean);
-  let javaPath = 'java';
-  if (modpack === 'banealand') {
-    if (fs.existsSync(java8)) javaPath = java8;
-    else if (fs.existsSync(legacyJava)) javaPath = legacyJava;
-    else if (fs.existsSync(legacyJavaAlt)) javaPath = legacyJavaAlt;
-    else if (fs.existsSync(gammaRuntime)) javaPath = gammaRuntime;
-  } else {
-    const found21 = java21Candidates.find(p => p && fs.existsSync(p));
-    if (found21) javaPath = found21;
-    else if (fs.existsSync(gammaRuntime)) javaPath = gammaRuntime;
-    else if (fs.existsSync(legacyJava)) javaPath = legacyJava;
-    else if (fs.existsSync(legacyJavaAlt)) javaPath = legacyJavaAlt;
-    else if (fs.existsSync(java8)) javaPath = java8;
-  }
+    // Ruta Java preferida: primero JAVA_HOME, luego runtimes incluidos, luego Java 8 fijo, luego PATH
+    const javaBin = modpack === 'banealand' ? 'java.exe' : 'javaw.exe';
+    const javaHomeBin = process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', javaBin) : null;
+    const java8 = path.join('C:\\', 'Program Files', 'Java', 'jre1.8.0_471', 'bin', javaBin);
+    const gammaRuntime = path.join(defaultMcRoot, 'runtime', 'java-runtime-gamma', 'windows-x64', 'java-runtime-gamma', 'bin', javaBin);
+    const legacyJava = path.join(defaultMcRoot, 'runtime', 'jre-x64', 'bin', javaBin);
+    const legacyJavaAlt = path.join(defaultMcRoot, 'runtime', 'jre-legacy', 'windows-x64', javaBin);
+    const java21Candidates = [
+      path.join('C:\\', 'Program Files', 'Java', 'jdk-21', 'bin', 'javaw.exe'),
+      path.join('C:\\', 'Program Files', 'Java', 'jdk-21.0.8', 'bin', 'javaw.exe'),
+      path.join('C:\\', 'Program Files', 'Java', 'jdk-21.0.9', 'bin', 'javaw.exe')
+    ];
+
+    let javaPath = 'java';
+    const picks = modpack === 'banealand'
+      ? [javaHomeBin, legacyJava, legacyJavaAlt, gammaRuntime, java8]
+      : [javaHomeBin, ...java21Candidates, gammaRuntime, legacyJava, legacyJavaAlt, java8];
+    const found = picks.find(p => p && fs.existsSync(p));
+    if (found) javaPath = found;
 
     // Lanzar banealand en modo directo (sin mclc) usando el classpath completo
     if (modpack === 'banealand') {
