@@ -21,6 +21,8 @@ modpacks/*/forge-*-installer.jar.log
 modpacks/*/*.jar
 modpacks/*/*.zip
 imgui.ini
+dist/
+release/
 
 # Archivos de log comprimidos
 *.log

@@ -4,11 +4,13 @@ const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
 const electron = require('electron');
+const { autoUpdater } = require('electron-updater');
 const launcher = require('minecraft-launcher-core');
 const msmc = require('msmc');
 const http = require('http');
 const https = require('https');
 const { spawn } = require('child_process');
+const zlib = require('zlib');
 
 // Limitar sockets simultÃ¡neos para evitar "too many open files" en descargas masivas
 http.globalAgent.maxSockets = 96;
@@ -30,6 +32,7 @@ if (!electron || !electron.ipcMain) {
 }
 
 const { app, BrowserWindow, ipcMain, shell, screen } = electron;
+app.setAppUserModelId('com.alee.launcher');
 
 let mainWindow;
 let currentUser = null;
@@ -99,6 +102,33 @@ function loadLoginPage() {
 
 function loadDashboardPage() {
   mainWindow.loadFile(path.join(__dirname, 'public', 'dashboard.html'));
+}
+
+function setupAutoUpdater() {
+  if (!app.isPackaged) return;
+  autoUpdater.autoDownload = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    mainWindow?.webContents.send('app-update', { type: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('app-update', { type: 'available', info });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    mainWindow?.webContents.send('app-update', { type: 'none' });
+  });
+
+  autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('app-update', { type: 'error', message: err?.message || String(err) });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    mainWindow?.webContents.send('app-update', { type: 'downloaded', info });
+  });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {});
 }
 
 const profileDefaults = () => ({
@@ -253,6 +283,28 @@ ipcMain.handle('check-modpack-update', async () => {
   }
 });
 
+ipcMain.handle('check-app-update', async () => {
+  if (!app.isPackaged) return { success: false, message: 'Solo en versión instalada' };
+  try {
+    const res = await autoUpdater.checkForUpdates();
+    const updateInfo = res?.updateInfo;
+    const needs = !!updateInfo && updateInfo.version !== app.getVersion();
+    return { success: true, needsUpdate: needs, info: updateInfo };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+});
+
+ipcMain.handle('install-app-update', async () => {
+  if (!app.isPackaged) return { success: false, message: 'Solo en versión instalada' };
+  try {
+    autoUpdater.quitAndInstall();
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+});
+
 // Login offline (no premium)
 ipcMain.handle('login-offline', async (_event, username) => {
   const name = (username || '').trim();
@@ -326,6 +378,11 @@ ipcMain.handle('launch-game', async (_event, opts = {}) => {
       await ensureForgeManifest(forgeVersionJson, universalPath);
 
       await syncModpackAssets(modpackRoot, rootToUse, manifest);
+
+      // Preconfigurar lista de servidores
+      writeServerList(rootToUse, [
+        { name: 'Banealand', ip: '158.69.63.139', acceptTextures: true }
+      ]);
     }
 
     if (wantsOffline) {
@@ -874,8 +931,8 @@ async function runForgeDirect(mcRoot, javaPath, auth, settings, forgeUniversal) 
   const token = auth?.access_token || auth?.accessToken || '0';
   const userType = auth?.user_type || auth?.userType || 'msa';
 
-  const width = Number(settingsNorm?.windowWidth) || 854;
-  const height = Number(settingsNorm?.windowHeight) || 480;
+  const width = Math.max(800, Number(settingsNorm?.windowWidth) || 1920);
+  const height = Math.max(600, Number(settingsNorm?.windowHeight) || 1080);
   const fullscreenFlag = settingsNorm?.fullscreen ? 'true' : 'false';
   const startX = 0; // esquina superior izquierda para evitar offset raro
   const startY = 0;
@@ -901,8 +958,7 @@ async function runForgeDirect(mcRoot, javaPath, auth, settings, forgeUniversal) 
   if (fullscreenFlag === 'true') {
     args.push('--fullscreen', 'true');
   } else {
-    // No forzamos ancho/alto para evitar escalados raros; dejamos que MC use su tamaÃ±o por defecto
-    // ni pasamos x/y para que el SO decida la posiciÃ³n inicial
+    args.push('--width', String(width), '--height', String(height));
   }
 
   return new Promise((resolve, reject) => {
@@ -1195,6 +1251,42 @@ async function syncModpackFromManifest(modpackRoot, manifestUrlOrList) {
   return remote;
 }
 
+// Genera servers.dat con los servidores indicados
+function writeServerList(mcRoot, servers) {
+  const filePath = path.join(mcRoot, 'servers.dat');
+  fs.mkdirSync(mcRoot, { recursive: true });
+
+  const chunks = [];
+  const pushByte = (v) => chunks.push(Buffer.from([v & 0xff]));
+  const pushShort = (v) => { const b = Buffer.alloc(2); b.writeInt16BE(v); chunks.push(b); };
+  const pushInt = (v) => { const b = Buffer.alloc(4); b.writeInt32BE(v); chunks.push(b); };
+  const pushString = (s) => { const buf = Buffer.from(s || '', 'utf8'); pushShort(buf.length); chunks.push(buf); };
+
+  // Root: TAG_Compound "servers"
+  pushByte(10);
+  pushString('servers');
+
+  // List "servers" of TAG_Compound
+  pushByte(9);
+  pushString('servers');
+  pushByte(10); // payload type compound
+  pushInt(servers.length);
+
+  servers.forEach((srv) => {
+    pushByte(8); pushString('name'); pushString(srv.name);
+    pushByte(8); pushString('ip'); pushString(srv.ip);
+    pushByte(1); pushString('acceptTextures'); pushByte(srv.acceptTextures ? 1 : 0);
+    pushByte(0); // end compound
+  });
+
+  // End root compound
+  pushByte(0);
+
+  const raw = Buffer.concat(chunks);
+  const gz = zlib.gzipSync(raw);
+  fs.writeFileSync(filePath, gz);
+}
+
 async function ensureNatives(mcRoot, nativesPath) {
   try {
     const hasDll = fs.readdirSync(nativesPath).some(f => f.toLowerCase().endsWith('.dll'));
@@ -1331,6 +1423,7 @@ ipcMain.handle('microsoft-login', async () => {
 });
 
 app.whenReady().then(createWindow);
+app.whenReady().then(setupAutoUpdater);
 
 app.disableHardwareAcceleration();
 app.setPath('userData', path.join(app.getPath('home'), 'ALELauncherData'));
@@ -1338,4 +1431,7 @@ app.setPath('userData', path.join(app.getPath('home'), 'ALELauncherData'));
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+
+
 

@@ -381,6 +381,32 @@ function showToast(message, type = "info") {
   setTimeout(() => div.remove(), 4000);
 }
 
+function handleAppUpdateEvent(payload) {
+  if (!payload) return;
+  if (payload.type === "available") {
+    showToast(`Actualización del launcher disponible (v${payload.info?.version || "?"}). Descargando...`, "success");
+  } else if (payload.type === "downloaded") {
+    showToast("Actualización lista. Se instalará al reiniciar el launcher.", "success");
+  } else if (payload.type === "error") {
+    showToast(`Error al buscar actualización del launcher: ${payload.message}`, "error");
+  } else if (payload.type === "none") {
+    showToast("No se encontraron actualizaciones pendientes del launcher. Última versión en uso.", "success");
+  }
+}
+
+window.api.onAppUpdate(handleAppUpdateEvent);
+
+async function checkLauncherUpdate() {
+  try {
+    const res = await window.api.checkAppUpdate();
+    if (res?.needsUpdate) {
+      showToast(`Actualización del launcher encontrada (v${res.info?.version || "?"}). Descargando...`, "success");
+    }
+  } catch (_) {
+    // silencioso
+  }
+}
+
 profileTabs.vanilla?.addEventListener("click", () => setActiveProfile("vanilla"));
 profileTabs.modpack?.addEventListener("click", () => setActiveProfile("modpack"));
 
@@ -398,3 +424,4 @@ populateVersions(fallbackVersions);
 loadUserData();
 refreshSettings();
 checkModpackUpdate();
+checkLauncherUpdate();
