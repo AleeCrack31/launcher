@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   launchGame: (options) => ipcRenderer.invoke('launch-game', options || {}),
   loginOffline: (username) => ipcRenderer.invoke('login-offline', username),
   loginMicrosoft: () => ipcRenderer.invoke('microsoft-login'),
+  loginCustom: (payload) => ipcRenderer.invoke('login-custom', payload || {}),
   checkModpackUpdate: () => ipcRenderer.invoke('check-modpack-update'),
   checkAppUpdate: () => ipcRenderer.invoke('check-app-update'),
   installAppUpdate: () => ipcRenderer.invoke('install-app-update'),

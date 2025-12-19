@@ -1,8 +1,10 @@
 const intro = document.querySelector(".intro");
 const loginWrap = document.querySelector(".login-wrap");
 const msLoginBtn = document.getElementById("msLoginBtn");
-const offlineBtn = document.getElementById("offlineBtn");
-const offlineName = document.getElementById("offlineName");
+const loginBtn = document.getElementById("loginBtn");
+const userField = document.getElementById("userField");
+const emailField = document.getElementById("emailField");
+const passField = document.getElementById("passField");
 const toastContainer = document.getElementById("toastContainer");
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -30,21 +32,27 @@ msLoginBtn?.addEventListener("click", async () => {
   }
 });
 
-offlineBtn?.addEventListener("click", async () => {
-  const name = offlineName?.value || "";
-  offlineBtn.disabled = true;
-  offlineBtn.textContent = "Entrando...";
+loginBtn?.addEventListener("click", async () => {
+  const username = userField?.value || "";
+  const email = emailField?.value || "";
+  const password = passField?.value || "";
+  if (!username.trim() || !email.trim() || !password.trim()) {
+    showToast("Completa usuario, correo y contraseña.", "error");
+    return;
+  }
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Ingresando...";
   try {
-    const res = await window.api.loginOffline(name);
-    if (!res.success) {
-      showToast(res.message || "No se pudo entrar offline", 'error');
+    const res = await window.api.loginCustom({ username, email, password });
+    if (!res?.success) {
+      showToast(res?.message || "No se pudo iniciar sesión.", "error");
     }
   } catch (err) {
     console.error(err);
-    showToast("Error al entrar offline", 'error');
+    showToast("Error al iniciar sesión.", "error");
   } finally {
-    offlineBtn.disabled = false;
-    offlineBtn.textContent = "Entrar offline";
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Iniciar sesión";
   }
 });
 

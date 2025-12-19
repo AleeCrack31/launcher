@@ -51,9 +51,12 @@
       "oneClick": true,
       "perMachine": false,
       "allowElevation": false,
+      "runAfterFinish": true,
       "artifactName": "LauncherAlee-Setup-${version}.exe",
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "LauncherAlee",
+      "deleteAppDataOnUninstall": false
     },
     "publish": [
       {

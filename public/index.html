@@ -15,16 +15,20 @@
       <h1>ALELAUNCHER</h1>
 
       <div class="switch-buttons">
-        <button class="active fancy-button">Acceder</button>
+        <button class="active fancy-button">Iniciar sesión</button>
       </div>
 
       <div id="forms">
-        <button id="msLoginBtn" class="fancy-button">Iniciar sesión con Microsoft</button>
-        <p style="margin-top:12px;font-size:12px;color:#ccc;">Se abrirá una ventana de Microsoft para autorizar tu cuenta.</p>
-        <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;">
-          <p class="muted" style="margin-bottom:8px;">O jugar sin Microsoft</p>
-          <input id="offlineName" type="text" placeholder="Nombre en el juego" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:#0f1625;color:#fff;">
-          <button id="offlineBtn" class="ghost-button" style="margin-top:10px;width:100%;">Entrar offline</button>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input id="userField" type="text" placeholder="Nombre de usuario" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:#0f1625;color:#fff;">
+          <input id="emailField" type="email" placeholder="Correo electrónico" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:#0f1625;color:#fff;">
+          <input id="passField" type="password" placeholder="Contraseña" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:#0f1625;color:#fff;">
+          <button id="loginBtn" class="fancy-button" style="width:100%;">Iniciar sesión</button>
+        </div>
+        <div style="margin-top:22px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;display:flex;flex-direction:column;gap:8px;">
+          <p class="muted" style="margin-bottom:0;">Prefieres Microsoft?</p>
+          <button id="msLoginBtn" class="fancy-button" style="background:linear-gradient(135deg,#7ae0ff,#4de1b0);color:#041022;">Iniciar sesión con Microsoft</button>
+          <p style="margin-top:2px;font-size:12px;color:#ccc;">Se abrirá una ventana de Microsoft para autorizar tu cuenta.</p>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ const fs = require('fs');
 const fsp = fs.promises;
 const electron = require('electron');
 const { autoUpdater } = require('electron-updater');
+const axios = require('axios');
 const launcher = require('minecraft-launcher-core');
 const msmc = require('msmc');
 const http = require('http');
@@ -42,6 +43,7 @@ const banealandManifestUrls = [
   'https://raw.githubusercontent.com/AleeCrack31/banealand/main/manifest.json',
   'https://cdn.jsdelivr.net/gh/AleeCrack31/banealand@main/manifest.json'
 ];
+const authApiBase = (process.env.AUTH_API_URL || 'https://example.com/api').replace(/\/+$/, '');
 
 function clearTokenFiles() {
   const candidates = new Set();
@@ -316,6 +318,33 @@ ipcMain.handle('login-offline', async (_event, username) => {
   return { success: true };
 });
 
+// Login personalizado contra backend (solo inicio de sesión)
+ipcMain.handle('login-custom', async (_event, payload) => {
+  const { username = '', email = '', password = '' } = payload || {};
+  if (!username.trim() || !email.trim() || !password.trim()) {
+    return { success: false, message: 'Completa usuario, correo y contraseña.' };
+  }
+  try {
+    const url = `${authApiBase}/login`;
+    const res = await axios.post(url, { username, email, password });
+    const data = res?.data || {};
+    if (!data.success && !data.token) {
+      throw new Error(data.message || 'Credenciales inválidas');
+    }
+    const displayName = data.displayName || data.username || username;
+    currentUser = {
+      game_name: displayName,
+      role: 'Custom',
+      customAuth: { token: data.token || null, profile: data }
+    };
+    clearTokenFiles(); // limpiar tokens MS, pero mantener custom en memoria
+    loadDashboardPage();
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: err?.response?.data?.message || err.message || 'Error al iniciar sesión' };
+  }
+});
+
 // Logout
 ipcMain.handle('logout', () => {
   clearTokenFiles();
@@ -332,11 +361,14 @@ ipcMain.handle('launch-game', async (_event, opts = {}) => {
   try {
     const { offlineMode = false, version = '1.20.1', modpack } = opts;
     const hasMs = !!currentUser?.microsoft?.mclcAuth;
-    const wantsOffline = !!(offlineMode || !hasMs);
-    if (wantsOffline) {
+    const hasCustom = !!currentUser?.customAuth;
+    const authType = offlineMode ? 'offline' : (hasMs ? 'ms' : (hasCustom ? 'custom' : 'offline'));
+    const needsOfflineReset = authType === 'offline' && !hasCustom;
+    if (needsOfflineReset) {
       clearTokenFiles();
       if (currentUser) {
         delete currentUser.microsoft;
+        delete currentUser.customAuth;
         currentUser.role = 'Offline';
       }
     }
@@ -385,11 +417,7 @@ ipcMain.handle('launch-game', async (_event, opts = {}) => {
       ]);
     }
 
-    if (wantsOffline) {
-      const name = currentUser?.game_name || 'OfflinePlayer';
-      authorization = launcher.authenticator.getAuth(name);
-    } else {
-      if (!hasMs) throw new Error("Inicia sesion en Microsoft primero");
+    if (authType === 'ms') {
       authorization = currentUser.microsoft.mclcAuth;
 
       // Refuerzo de datos de perfil para versiones viejas (ej. 1.8.9)
@@ -409,6 +437,9 @@ ipcMain.handle('launch-game', async (_event, opts = {}) => {
       if (!authorization.user_properties || typeof authorization.user_properties !== 'object') {
         authorization.user_properties = {};
       }
+    } else if (authType === 'custom' || authType === 'offline') {
+      const name = currentUser?.game_name || 'Jugador';
+      authorization = launcher.authenticator.getAuth(name);
     }
 
     // Aplicar opciones personalizadas (FOV, sensibilidad, teclas, fullscreen)
